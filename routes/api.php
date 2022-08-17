@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Route;
 Route::post('/register', [LoginController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login']);
 
+Route::post('/verify', [LoginController::class, 'verifyCode']);
+
 Route::group([
     'middleware' => ['auth:api']
 ], function () {

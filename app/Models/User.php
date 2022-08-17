@@ -3,9 +3,12 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Mail\SendCodeMail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
@@ -40,4 +43,27 @@ class User extends Authenticatable
         'deleted_at',
         'email_verified_at',
     ];
+
+    public function generateCode($user)
+    {
+        $code = rand(1000, 9999);
+
+        UserCode::updateOrCreate(
+            [ 'user_id' =>$user->id ],
+            [ 'code' => $code ]
+        );
+
+        try {
+
+            $details = [
+                'title' => 'Mail from Laravel Banking',
+                'code' => $code
+            ];
+
+            Mail::to($user->email)->send(new SendCodeMail($details));
+
+        } catch (\Exception $e) {
+            return response(["Error: ". $e->getMessage()]);
+        }
+    }
 }
