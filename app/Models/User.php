@@ -44,6 +44,11 @@ class User extends Authenticatable
         'email_verified_at',
     ];
 
+    public function userRole() {
+        return $this->hasOne(UserRole::class, 'user_id', 'id');
+    }
+    
+
     public function generateCode($user)
     {
         $code = rand(1000, 9999);

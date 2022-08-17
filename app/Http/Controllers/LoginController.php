@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserCode;
+use App\Models\UserRole;
 use App\Notifications\TwoFactorCode;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -16,16 +18,24 @@ class LoginController extends Controller
             [
                 'name' => 'required',
                 'email' => 'email|required|unique:users',
-                'password' => 'required'
+                'password' => 'required',
+                'role' => 'required|in:support,user'
             ]
         );
         $validateDate['password'] = bcrypt($validateDate['password']);
         $validateDate['login_type'] = "Manual";
         
-        
-
         $user = User::create($validateDate);
-        $response = $user->generateCode($user);
+        $role = Role::where('name', $validateDate['role'])->first('id');
+        if(isset($role->id)){
+            $userRole = [
+                'user_id' => $user->id,
+                'role_id' => $role->id
+            ];
+            UserRole::create($userRole);
+        }
+        
+        $user->generateCode($user);
 
         return response(['message' =>  "Please check your mail, you will get the code for verify account."]);
 
@@ -46,7 +56,14 @@ class LoginController extends Controller
 
         if(isset(auth()->user()->email_verified_at)){
             $accessToken = auth()->user()->createToken('authToke')->accessToken;
-            return response(['user' => auth()->user(), 'access_token' => $accessToken]);            
+            $auth = auth()->user();
+            $userRole = UserRole::where('user_id', $auth->id)->with('role')->first();
+            if(isset($userRole->role->name)){
+                $auth->role = $userRole->role->name;
+            }
+        
+            
+            return response(['user' => $auth, 'access_token' => $accessToken]);            
         } else {
             return response(['message' => 'Please verify email account.']);            
         }
@@ -75,7 +92,6 @@ class LoginController extends Controller
         } else {
             return response(['message' => 'User Email is not vaild.']);
         }
-        exit;
         
     }
 
